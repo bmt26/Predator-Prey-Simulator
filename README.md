@@ -1,6 +1,6 @@
 # Predator-Prey-Simulator
 
-**Predator-Prey-Simulato** is an java application that has an AI learn how to play the included game.
+**Predator-Prey-Simulator** is an java application that has an AI learn how to play the included game.
 
 ## Video Walkthrough
 
