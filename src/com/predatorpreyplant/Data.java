@@ -38,7 +38,7 @@ public class Data {
 	
 	public void readFile() {
 		try {
-		      File myObj = new File("src/log/Gen" + oldGen + ".txt");
+		      File myObj = new File("trials/Gen" + oldGen + ".txt");
 		      Scanner myReader = new Scanner(myObj);
 		      int p = 0;
 		      int m = 0;
@@ -192,7 +192,7 @@ public class Data {
 	public void Save() {
 	    
 	    try {
-	    	String filename = "src/log/Gen" + currGen + ".txt";
+	    	String filename = "trials/Gen" + currGen + ".txt";
 	    	FileWriter myWriter = new FileWriter(filename);
 	    	String text = "Plants Score: ";
 		    for (int i = 0; i < currPlantsScore.length; i++) {
