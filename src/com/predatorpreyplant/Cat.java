@@ -10,11 +10,23 @@ public class Cat extends Sprite {
     private int dy;
     private int miceEaten = 0;
 	  					 //0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
-    private int[] genes = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    //private int[] genes = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    //private int[] genes = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private int[] genes;
     private final int B_WIDTH;
     private final int B_HEIGHT;
     private final int[] MOUSEHOLE;
-
+    private boolean canSwat = true;
+    private boolean swatting = false;
+    
+    public Cat(int x, int y, int bW, int bH, int[] mH) {
+        super(x, y);
+        B_WIDTH = bW;
+        B_HEIGHT = bH;
+        MOUSEHOLE = mH;
+        initCat();
+    }
+    
     public Cat(int x, int y, int bW, int bH, int[] mH, int[] g) {
         super(x, y);
         B_WIDTH = bW;
@@ -31,12 +43,92 @@ public class Cat extends Sprite {
     }
 
     public int[] getGenes() { return genes; }
+    public boolean Swat() { 
+    	if(canSwat&&swatting) {
+    		canSwat=false;
+    		return true;
+    	}
+    	return false;
+    }
     
     public void incrementMiceEaten() { miceEaten+=1; }
     
     public int getMiceEaten() { return miceEaten; }
     
-    public void think(List<Plant> plants, List<Mouse> mice) {
+    public void think(List<Plant> plants, List<Mouse> mice, boolean fart) {
+        Rectangle recMouseHole = new Rectangle(MOUSEHOLE[0], MOUSEHOLE[1], MOUSEHOLE[2], MOUSEHOLE[3]);
+        Rectangle recMouse = mice.get(0).getBounds();
+
+		int mouseProxSafeX = B_WIDTH-(mice.get(0).x+mice.get(0).width/2)-(MOUSEHOLE[0]+MOUSEHOLE[2]/2);
+		int mouseProxSafeY = B_HEIGHT-(mice.get(0).y+mice.get(0).height/2)-(MOUSEHOLE[1]+MOUSEHOLE[3]-50);
+    	int mouseProxFruitX = B_WIDTH-(mice.get(0).x+mice.get(0).width/2)-(plants.get(0).getFruit().get(0).x+plants.get(0).getFruit().get(0).width/2);
+    	int mouseProxFruitY = B_HEIGHT-(mice.get(0).y+mice.get(0).height/2)-(plants.get(0).getFruit().get(0).y+plants.get(0).getFruit().get(0).height/2);
+    	int proxLBorder = -x;
+    	int proxTBorder = -y;
+    	int proxRBorder = B_WIDTH-x+width;
+    	int proxBBorder = B_HEIGHT-x+height;
+    	int proxMouseX = mice.get(0).x+mice.get(0).width/2-x-width/2;
+    	int proxMouseY = mice.get(0).y+mice.get(0).height/2-y-height/2;
+    	int proxFruitX = plants.get(0).getFruit().get(0).x+plants.get(0).getFruit().get(0).width/2-x-width/2;
+    	int proxFruitY = plants.get(0).getFruit().get(0).y+plants.get(0).getFruit().get(0).height/2-y-height/2;
+    	int proxSafeX = MOUSEHOLE[0]+MOUSEHOLE[2]/2-x-width/2;
+    	int proxSafeY = MOUSEHOLE[1]-50-y-height/2;
+    	
+    	int state;
+    	
+    	int toX = 0;
+    	int toY = 0;
+    	
+    	if (recMouseHole.intersects(recMouse)) { 
+    		if (canSwat) 							{ state = 5; } // inside safe can repel
+    		else 									{ state = 4; } // inside safe can't repel
+    	} else if (mice.get(0).getHasFruit()) {
+		if (canSwat) 								{ state = 3; } // outside safe with fruit can repel
+		else 										{ state = 2; } // outside safe with fruit can't repel
+    	} else {
+    		if (canSwat) 							{ state = 1; } // outside safe without fruit can repel
+    		else 									{ state = 0; } // outside safe without fruit can't repel
+    	}
+    	
+		toX = mouseProxSafeX		* genes[state * genes.length / 6 + 0]
+			+ mouseProxFruitX		* genes[state * genes.length / 6 + 1]
+			+ proxLBorder			* genes[state * genes.length / 6 + 2]
+			+ proxRBorder			* genes[state * genes.length / 6 + 3]
+			+ proxMouseX			* genes[state * genes.length / 6 + 4]
+			+ proxFruitX			* genes[state * genes.length / 6 + 5]
+			+ proxSafeX				* genes[state * genes.length / 6 + 6];
+		
+		toY = mouseProxSafeY		* genes[state * genes.length / 6 + 7]
+			+ mouseProxFruitY		* genes[state * genes.length / 6 + 8]
+			+ proxTBorder			* genes[state * genes.length / 6 + 9]
+			+ proxBBorder			* genes[state * genes.length / 6 + 10]
+			+ proxMouseY			* genes[state * genes.length / 6 + 11]
+			+ proxFruitY			* genes[state * genes.length / 6 + 12]
+			+ proxSafeY				* genes[state * genes.length / 6 + 13];
+		
+		swatting = (Math.abs(mouseProxSafeX)		+ Math.abs(mouseProxSafeY))		/300	< genes[state * genes.length / 6 + 14]
+				 ||(Math.abs(mouseProxFruitX)		+ Math.abs(mouseProxFruitY))	/300	< genes[state * genes.length / 6 + 15]
+				 ||(Math.abs(proxTBorder)			+ Math.abs(proxTBorder))		/300	< genes[state * genes.length / 6 + 16]
+				 ||(Math.abs(proxBBorder)			+ Math.abs(proxTBorder))		/300	< genes[state * genes.length / 6 + 17]
+				 ||(Math.abs(proxMouseX)			+ Math.abs(proxMouseX))			/300	< genes[state * genes.length / 6 + 18]
+				 ||(Math.abs(proxFruitX)			+ Math.abs(proxFruitY))			/300	< genes[state * genes.length / 6 + 19]
+				 ||(Math.abs(proxSafeX)				+ Math.abs(proxSafeY))			/300	< genes[state * genes.length / 6 + 20];
+		if (swatting&&canSwat) {
+			System.out.println("Cat used swat");
+		}
+		
+		if(fart) {
+    		dx=-2*Integer.signum(mice.get(0).x+mice.get(0).width/2-x-width/2);
+    		dy=-2*Integer.signum(mice.get(0).y+mice.get(0).height/2-y-height/2);
+		}
+		else {
+	    	dx = 2*Integer.signum(toX);
+	    	dy = 2*Integer.signum(toY);
+		}
+    	move();
+    }
+    
+    public void think2(List<Plant> plants, List<Mouse> mice, boolean fart) {
         Rectangle recMouseHole = new Rectangle(MOUSEHOLE[0], MOUSEHOLE[1], MOUSEHOLE[2], MOUSEHOLE[3]);
         Rectangle recMouse = mice.get(0).getBounds();
 
@@ -87,11 +179,15 @@ public class Cat extends Sprite {
     	
     	dx = 2*Integer.signum(proxLeftBorder+proxRightBorder+proxMouseX+proxPlantX+proxFruitX+proxSafeX);
     	dy = 2*Integer.signum(proxTopBorder+proxBottomBorder+proxMouseY+proxPlantY+proxFruitY+proxSafeY);
+    	if(fart) {
+    		dx=-2*Integer.signum(mice.get(0).x+mice.get(0).width/2-x-width/2);
+    		dy=-2*Integer.signum(mice.get(0).y+mice.get(0).height/2-y-height/2);
+    		
+    	}
     	move();
     }
     
     public void move() {
-
         x += dx;
         y += dy;
 

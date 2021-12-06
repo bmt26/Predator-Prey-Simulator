@@ -27,9 +27,9 @@ public class Data {
 	public Data(int gen) {
 		oldGen = gen;
 		currGen = oldGen+1;
-		oldPlantsGenes= new int[20][];
-		oldMiceGenes= new int[20][];
-		oldCatsGenes= new int[20][];
+		oldPlantsGenes= new int[52][];
+		oldMiceGenes= new int[52][];
+		oldCatsGenes= new int[52][];
 	    readFile();
 	    Reproduce();
 	}
@@ -73,6 +73,10 @@ public class Data {
 	    	e.printStackTrace();
 	    }
 	}
+
+	public int[][] getOldPlantsGenes() { return oldPlantsGenes; }
+	public int[][] getOldMiceGenes() { return oldMiceGenes; }
+	public int[][] getOldCatsGenes() { return oldCatsGenes; }
 	
 	public int[][] getPlantsGenes() { return currPlantsGenes; }
 	public int[][] getMiceGenes() { return currMiceGenes; }
@@ -87,23 +91,23 @@ public class Data {
 	public void setCatsGenes(int[][] cG) { currCatsGenes = cG;}
 	
 	public void Reproduce() {
-		System.out.println("Plant: ");
+		//System.out.println("Plant: ");
 		int[][] plantsParents = ChooseParent(oldPlantsScore);
-		System.out.println("Mice: ");
+		//System.out.println("Mice: ");
 		int[][] miceParents = ChooseParent(oldMiceScore);
-		System.out.println("Cat: ");
+		//System.out.println("Cat: ");
 		int[][] catsParents = ChooseParent(oldCatsScore);
 
-		System.out.println();
-		System.out.println("Plant: ");
+		//System.out.println();
+		//System.out.println("Plant: ");
 		currPlantsGenes = OffspringGenes(plantsParents, oldPlantsGenes);
-		System.out.println();
-		System.out.println("Mice: ");
+		//System.out.println();
+		//System.out.println("Mice: ");
 		currMiceGenes = OffspringGenes(miceParents, oldMiceGenes);
-		System.out.println();
-		System.out.println("Cat: ");
+		//System.out.println();
+		//System.out.println("Cat: ");
 		currCatsGenes = OffspringGenes(catsParents, oldCatsGenes);
-		System.out.println();
+		//System.out.println();
 	}
 	
 	public int[][] ChooseParent(int[] scores) {
@@ -143,8 +147,8 @@ public class Data {
 			}
 			retParents[i][0] = parent1;
 			retParents[i][1] = parent2;
-			System.out.println("Parent[" + i + "][0]: " + parent1);
-			System.out.println("Parent[" + i + "][1]: " + parent2);
+			//System.out.println("Parent[" + i + "][0]: " + parent1);
+			//System.out.println("Parent[" + i + "][1]: " + parent2);
 		}
 		return retParents;
 	}
@@ -154,15 +158,15 @@ public class Data {
 		for (int i = 0; i < parents.length; i++) {
 			int parent1=parents[i][0];
 			int parent2=parents[i][1];
-			
+			//System.out.println(i);
 			retGenes[i*4]=Mutate(genes[parent1], genes[parent2]);
-			System.out.println();
+			//System.out.println();
 			retGenes[i*4+1]=Mutate(genes[parent1], genes[parent2]);
-			System.out.println();
-			retGenes[i*4+2]=Mutate(genes[parent1], genes[parent2]);
-			System.out.println();
-			retGenes[i*4+3]=Mutate(genes[parent1], genes[parent2]);
-			System.out.println();
+			//System.out.println();
+			retGenes[i*4+2]=Mutate(genes[parent2], genes[parent1]);
+			//System.out.println();
+			retGenes[i*4+3]=Mutate(genes[parent2], genes[parent1]);
+			//System.out.println();
 		}
 		return retGenes;
 	}
@@ -170,20 +174,18 @@ public class Data {
 	public int[] Mutate(int[] parent1Genes, int[] parent2Genes) {
 		Random rand = new Random();
 		int[] retGenes = new int[parent1Genes.length];
-		int p1Counter=0;
 		for (int i = 0; i < parent1Genes.length; i++) {
-			System.out.print("| " + parent1Genes[i] + " ");
-			if((rand.nextFloat()<0.5 && p1Counter<parent1Genes.length/2)||(p1Counter>=i-parent1Genes.length/2)) {
+			//System.out.print("| " + parent1Genes[i] + " ");
+			if(rand.nextFloat()<0.6) {
 				retGenes[i]= parent1Genes[i];
-				p1Counter++;
 			}
 			else {
 				retGenes[i]= parent2Genes[i];
 			}
 			
 			
-			if(rand.nextInt(20)==0) {
-				retGenes[i]+=rand.nextInt(3)-1;
+			if(rand.nextInt(1000)==0) {
+				retGenes[i]+= rand.nextInt(2)==1 ? 1 : -1;
 			}
 		}
 		return retGenes;
@@ -206,7 +208,7 @@ public class Data {
 	    	for (int i = 0; i < currCatsScore.length; i++) {
 	    		text+=currCatsScore[i] + " ";
 	    	}
-	    	for (int i = 0; i< 20; i++) {
+	    	for (int i = 0; i< 52; i++) {
 		    	text += "\nPlants Genes: ";
 		    	for (int j = 0; j < currPlantsGenes[i].length; j++) {
 			    	text+=currPlantsGenes[i][j] + " ";

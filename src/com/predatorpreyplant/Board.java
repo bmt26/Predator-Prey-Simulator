@@ -20,18 +20,27 @@ public class Board extends JPanel implements ActionListener {
 
     private Timer timer;
     private long startTime;
+    private long swatTime = System.currentTimeMillis();
+    private boolean swatting = false;
+    private long fartTime = System.currentTimeMillis();
+    private boolean farting = false;
     private List<Wall> walls;
     private List<Plant> plants;
     private List<Mouse> mice;
     private List<Cat> cats;
     private int startingGen;
+    private int currGen;
+    private int gensBeforeSwap;
     private int currPlay=0;
     private Data data;
     private boolean ingame;
+    private boolean traincat;
+    private boolean trainmouse;
+    private boolean fastgame;
     private final int B_WIDTH = 1080;
     private final int B_HEIGHT = 720;
     private final int DELAY = 15;
-    private final int NUM_PLAYS = 19;
+    private final int NUM_PLAYS = 51;
 
     private final int[] MOUSEHOLE = {B_WIDTH/3, B_HEIGHT*3/4, B_WIDTH/3, B_HEIGHT/4};;
     private final int[][] wallsPos = {
@@ -50,20 +59,35 @@ public class Board extends JPanel implements ActionListener {
     	};
     private int[][] catsGenes;
     private final int[][] catsPos = {
-        {B_WIDTH/2-40, 160},
+        {B_WIDTH/6-40, 160},
     	};
 
     private int[] plantsScore = new int[NUM_PLAYS+1];
     private int[] miceScore = new int[NUM_PLAYS+1];
     private int[] catsScore = new int[NUM_PLAYS+1];
     
-    public Board(int gen) {
+    public Board(int gen, int gbs, boolean fg, boolean tc, boolean tm) {
     	startingGen = gen;
-    	data = new Data(startingGen);
+    	currGen = gen;
+    	gensBeforeSwap = gbs;
+    	fastgame = fg;
+    	traincat = tc;
+    	trainmouse = tm;
+    	data = new Data(currGen);
     	data.Reproduce();
     	plantsGenes=data.getPlantsGenes();
-    	miceGenes=data.getMiceGenes();
-    	catsGenes=data.getCatsGenes();
+    	if(trainmouse) {
+        	miceGenes=data.getMiceGenes();
+    	}
+    	else {
+        	miceGenes=data.getOldMiceGenes();
+    	}
+    	if(traincat) {
+        	catsGenes=data.getCatsGenes();
+    	}
+    	else {
+        	catsGenes=data.getOldCatsGenes();
+    	}
         initBoard();
     }
 
@@ -81,6 +105,7 @@ public class Board extends JPanel implements ActionListener {
         initMice();
         initCats();
         
+        swatting=false;
 
         timer = new Timer(DELAY, this);
         timer.start();
@@ -117,7 +142,7 @@ public class Board extends JPanel implements ActionListener {
         cats = new ArrayList<>();
 
         for (int i = 0; i<catsPos.length; i++) {
-            cats.add(new Cat(catsPos[i][0], catsPos[i][1], B_WIDTH, B_HEIGHT, MOUSEHOLE, catsGenes[currPlay]));
+        	cats.add(new Cat(catsPos[i][0], catsPos[i][1], B_WIDTH, B_HEIGHT, MOUSEHOLE, catsGenes[currPlay]));
         }
     }
 
@@ -126,31 +151,35 @@ public class Board extends JPanel implements ActionListener {
     		plantsScore[currPlay]=plants.get(i).getSeedDistance()+1;
     	}
     	for (int i = 0; i < mice.size(); i++) {
-    		miceScore[currPlay]=mice.get(i).getFruitEaten()*(B_WIDTH+B_HEIGHT)*10;
+    		miceScore[currPlay]=(int) (mice.get(i).getFruitEaten()*Math.pow((B_WIDTH+B_HEIGHT)/31, 2));
     		if(miceScore[currPlay]==0) {
                 Rectangle recMouseHole = new Rectangle(MOUSEHOLE[0], MOUSEHOLE[1], MOUSEHOLE[2], MOUSEHOLE[3]);
                 Rectangle recMouse = mice.get(i).getBounds();
     			if(recMouseHole.intersects(recMouse))
     			{
-            		miceScore[currPlay]=(int) (mice.get(i).getFruitProximity(plants.get(i))/80);
+            		miceScore[currPlay]=(int) (Math.pow(mice.get(i).getFruitProximity(plants.get(i))/1000, 2));
     			}
     			else {
-            		miceScore[currPlay]=(int) (mice.get(i).getHasFruit() ? (B_WIDTH+B_HEIGHT) + mice.get(i).getSafeProximity()*5 : Math.pow(mice.get(i).getFruitProximity(plants.get(i)), 3)/1000000);
+            		miceScore[currPlay]=(int) (mice.get(i).getHasFruit() ? Math.pow(mice.get(i).getSafeProximity()/30, 2) : Math.pow(mice.get(i).getFruitProximity(plants.get(i))/100, 2));
     			}
     		}
     		if(cats.get(i).getMiceEaten()==1)
-    		miceScore[currPlay]*=9/10;
+    		miceScore[currPlay]*=0.7;
 
     		if(miceScore[currPlay]<1)
     		miceScore[currPlay]=1;
     	}
     	for (int i = 0; i < cats.size(); i++) {
-    		catsScore[currPlay]=cats.get(i).getMiceEaten()*(B_WIDTH+B_HEIGHT);
+    		catsScore[currPlay]=(int) (Math.pow(cats.get(i).getMiceEaten()*(B_WIDTH+B_HEIGHT)/31,2)*((System.currentTimeMillis()-startTime)-(fastgame?6:600))/(System.currentTimeMillis()-startTime));
     		if (catsScore[currPlay]==0) {
-        		catsScore[currPlay]=(int) Math.pow(cats.get(i).getMouseProximity(mice.get(i)), 2)/10000;
+        		catsScore[currPlay]=(int) Math.pow(cats.get(i).getMouseProximity(mice.get(i))/100, 2);
+    		}
+    		if (catsScore[currPlay]<0) {
+    			catsScore[currPlay]=1;
     		}
     	}
     }
+    
     
     @Override
     public void paintComponent(Graphics g) {
@@ -168,17 +197,45 @@ public class Board extends JPanel implements ActionListener {
         	calcScores();
             saveData();
             
-            startingGen++;
-        	data = new Data(startingGen);
+            currGen++;
+        	data = new Data(currGen);
         	data.Reproduce();
         	plantsGenes=data.getPlantsGenes();
-        	miceGenes=data.getMiceGenes();
-        	catsGenes=data.getCatsGenes();
+        	if(trainmouse) {
+            	miceGenes=data.getMiceGenes();
+        	}
+        	else {
+            	miceGenes=data.getOldMiceGenes();
+        	}
+        	if(traincat) {
+            	catsGenes=data.getCatsGenes();
+        	}
+        	else {
+            	catsGenes=data.getOldCatsGenes();
+        	}
+        	if(gensBeforeSwap!=0) {
+        		if((currGen-startingGen)%gensBeforeSwap==0) {
+        			traincat= !traincat;
+        			trainmouse = !trainmouse;
+        		}
+        	}
             currPlay=0;
             initBoard();
         }
 
         Toolkit.getDefaultToolkit().sync();
+        
+        if(fastgame) {
+            inGame();
+
+            updateFruits();
+            updateMice();
+            updateCats();
+
+            checkCollisions();
+
+            repaint();
+        }
     }
 
     private void saveData() {
@@ -225,14 +282,26 @@ public class Board extends JPanel implements ActionListener {
 	    }
         g.setColor(Color.BLACK);
         for (int i = 0; i < currPlay; i++) {
-            g.drawString("Plant " + (i+1) + " Seed Distance: " + plantsScore[i], 5, 15*(i+1));
-            g.drawString("Mouse " + (i+1) + " Fruit Eaten: " + miceScore[i], B_WIDTH/3+5, 15*(i+1));
-            g.drawString("Cat " + (i+1) + " Mice Eaten: " + catsScore[i], B_WIDTH*2/3+5, 15*(i+1));
+            //g.drawString("Plant " + (i+1) + " Score: " + plantsScore[i], 5, 15*(i+1));
+        	if(i*2<NUM_PLAYS) {
+                g.drawString("Mouse " + (i+1) + " Score: " + miceScore[i], B_WIDTH/6+5, 15*(i+1));
+                g.drawString("Cat " + (i+1) + " Score: " + catsScore[i], B_WIDTH*2/3+5, 15*(i+1));
+        	}
+        	else {
+                g.drawString("Mouse " + (i+1) + " Score: " + miceScore[i], B_WIDTH/6+150, 15*(i+1-(NUM_PLAYS+1)/2));
+                g.drawString("Cat " + (i+1) + " Score: " + catsScore[i], B_WIDTH*2/3+150, 15*(i+1-(NUM_PLAYS+1)/2));
+        	}
         }
-        g.drawString("Time Left " + (20-(System.currentTimeMillis()-startTime)/1000), B_WIDTH-200, 15);
+        if(fastgame) {
+            g.drawString("Time Left: " + Math.round((0.6-(System.currentTimeMillis()-startTime)/1000.0)*10.0)/10.0, B_WIDTH/2-50, 15);
+        }
+        else {
+            g.drawString("Time Left: " + (6-(System.currentTimeMillis()-startTime)/1000), B_WIDTH/2-50, 15);
+        }
+        g.drawString("Current Gen: " + currGen, B_WIDTH/2-50, 30);
     }
 
-    private void drawGameOver(Graphics g) {
+    /*private void drawGameOver(Graphics g) {
 
         String msg = "Game Over";
         Font small = new Font("Helvetica", Font.BOLD, 14);
@@ -242,24 +311,25 @@ public class Board extends JPanel implements ActionListener {
         g.setFont(small);
         g.drawString(msg, (B_WIDTH - fm.stringWidth(msg)) / 2,
                 B_HEIGHT / 2);
-    }
+    }*/
 
     @Override
     public void actionPerformed(ActionEvent e) {
+    	if(!fastgame) {
+            inGame();
 
-        inGame();
+            updateFruits();
+            updateMice();
+            updateCats();
 
-        updateFruits();
-        updateMice();
-        updateCats();
+            checkCollisions();
 
-        checkCollisions();
-
-        repaint();
+            repaint();
+        }
     }
 
     private void inGame() {
-    	if ((6000-(System.currentTimeMillis()-startTime))<0) {
+    	if ((!fastgame&&6-(System.currentTimeMillis()-startTime)/1000.0<0)||(fastgame&&0.5-(System.currentTimeMillis()-startTime)/1000.0<0)) {
     		ingame=false;
     	}
         if (!ingame) {
@@ -295,9 +365,17 @@ public class Board extends JPanel implements ActionListener {
         for (int i = 0; i < mice.size(); i++) {
 
             Mouse mouse = mice.get(i);
-            
+            if(swatting&&(!fastgame&&1.0-(System.currentTimeMillis()-swatTime)/1000.0<0)||(fastgame&&0.1-(System.currentTimeMillis()-swatTime)/1000.0<0)) {
+            	swatting=false;
+            }
             if (mouse.isVisible()) {
-            	mouse.think(plants, cats);
+            	if(cats.get(i).Swat()) {
+            		swatting=true;
+            		swatTime=System.currentTimeMillis();
+            	}
+            	if(!swatting) {
+                	mouse.think(plants, cats);
+            	}
             } else {
             	ingame = false;
             }
@@ -315,9 +393,15 @@ public class Board extends JPanel implements ActionListener {
         for (int i = 0; i < cats.size(); i++) {
 
             Cat cat = cats.get(i);
-            
+            if(farting&&(!fastgame&&0.50-(System.currentTimeMillis()-fartTime)/1000.0<0)||(fastgame&&0.050-(System.currentTimeMillis()-fartTime)/1000.0<0)) {
+            	farting=false;
+            }
             if (cat.isVisible()) {
-                cat.think(plants, mice);
+            	if(mice.get(i).Fart()) {
+            		farting=true;
+            		fartTime=System.currentTimeMillis();
+            	}
+                cat.think(plants, mice, farting);
             }
         }
     }
@@ -334,8 +418,8 @@ public class Board extends JPanel implements ActionListener {
 
                     if (recMouse.intersects(recCat)) {
                     	cat.incrementMiceEaten();
-                    	mouse.setFruit(null);
-                    	mouse.setHasFruit(false);
+                    	//mouse.setFruit(null);
+                    	//mouse.setHasFruit(false);
                         mouse.setVisible(false);
                     }
                 }
@@ -384,6 +468,10 @@ public class Board extends JPanel implements ActionListener {
         public void keyPressed(KeyEvent e) {
             for (Mouse mouse : mice) {
                 mouse.keyPressed(e);
+            }
+            if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                fastgame = !fastgame;
+                repaint();
             }
         }
     }
