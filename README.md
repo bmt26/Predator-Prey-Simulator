@@ -38,7 +38,7 @@ Final Product of Proposal
 Generation 237: Mouse Learns to dodge cat when training by itself
 <img src='walkthroughDodgeOld.gif' title='Video Walkthrough' width='' alt='Video Walkthrough' />
 
-Final Product
+Final Product<br>
 Generation 25: Mouse begins to understand grabbing fruit
 <img src='walkthrough25.gif' title='Video Walkthrough' width='' alt='Video Walkthrough' />
 
