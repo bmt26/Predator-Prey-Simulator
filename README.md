@@ -1,6 +1,6 @@
 # Predator-Prey-Simulator
 
-**Predator-Prey-Simulator** is an java application that has an AI learn how to play the included game.
+**Predator-Prey-Simulator** is a Java application that simulates a game of tag between two agents driven by a self-learning genetic algorithm.
 
 ## Goal
 The goal of this simulation is to create a genetic algorithm and to utilize two instances of said genetic algorithm to synthesize a predator-prey relationship.
